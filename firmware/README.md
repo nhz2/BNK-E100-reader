@@ -27,4 +27,4 @@ Digital to analog converter [DAC80501](https://www.ti.com/lit/ds/symlink/dac8050
 
 [Schematic and PCB layout](https://easyeda.com/nzimmerberg/amp-chip)
 
-[Changing Signals During a Recording](diagrams/ChangingSignalsRecording.png)
+! [Changing Signals During a Recording](../diagrams/ChangingSignalsRecording.png)
