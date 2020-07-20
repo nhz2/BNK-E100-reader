@@ -33,8 +33,6 @@ During a recording, the following external signals change. Everything else on th
 
 ![Changing Signals During a Recording](../diagrams/ChangingSignalsRecording.png)
 
-### CCLK and CSCLK
-
 These are the two signals going into the BNKChip from the teensy 4.1.
 
 CCLK is the clock, and CSCLK is a signal to start a new frame. CCLK clocks in CSCLK and clocks out the analog data on its falling edge. 
@@ -43,3 +41,20 @@ Here is what the signals should look like (note: the teensy logic level is 3.3V 
 
 ![Signal Timing](../diagrams/cclkcsclk.png)
 
+## Background Software During a Recording 
+
+### FLEXIO
+
+### DMA
+
+### Interrupt
+
+### Status and Error Detection
+
+### Global Variables and Functions
+
+## SDFAT
+
+## DAC
+
+## RGB LED
