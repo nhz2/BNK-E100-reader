@@ -43,7 +43,25 @@ Here is what the signals should look like (note: the teensy logic level is 3.3V 
 
 ## Background Software During a Recording 
 
-### FLEXIO
+https://github.com/wramsdell/TriantaduoWS2811 is a project that I used as a working 
+example that uses DMA and FlexIO to do high speed IO on a teensy 4. 
+This library outputs data, while I am inputting data, but the main use of DMA and FlexIO
+are similar. The documentation below is also modeled on TriantaduoWS2811's readme.
+
+
+### FlexIO
+
+FlexIO is a collection of interconnected shift registers, timers, and pins in the teensy.
+It is described in detail in the [processor reference manual](https://www.pjrc.com/teensy/IMXRT1060RM_rev2.pdf)
+
+The FlexIO inputs the data from the six ADCs into six 32bit shift buffers and requests a DMA.
+
+The FlexIO also outputs the clocks and syncs for the ADCs and chip.
+
+The FlexIO is setup in `double setupflexio(double freq)` in the `pindefs` library.
+This sets up the FlexIO at a requested frame rate `freq` in Hz. It also returns the real frame rate used.
+
+![FlexIO Architecture](../diagrams/flexioarc.png)
 
 ### DMA
 
