@@ -48,6 +48,38 @@ example that uses DMA and FlexIO to do high speed IO on a teensy 4.
 This library outputs data, while I am inputting data, but the main use of DMA and FlexIO
 are similar. The documentation below is also modeled on TriantaduoWS2811's readme.
 
+### Global Variables and Functions
+
+The background tasks have an interface of global variables and functions.
+
+
+`double setupflexio(double freq)`: Setup flexIO at freq in Hz greater than 250.
+returns the real frequency in Hz of reading a frame.
+
+`void closeflexio()`: Disable the flexIO.
+
+`void setupflexiodma()`: Setup DMA from FLEXIO2 Do this before `setupflexio`
+
+`const uint32_t framebuffersize = 1<<18; //256 kB buffer`
+
+`const uint32_t framesize = 256;// frame size in bytes`
+
+`volatile uint8_t framebuffer[framebuffersize];`: The large circular buffer of frames to send out.
+
+`volatile uint32_t framebufferwritepointer;`: The `framebuffer` write pointer, update by 
+`dmaisr`.
+
+`volatile uint32_t framebufferreadpointer;`: The `framebuffer` read pointer, main program should update this as it reads frames out of `framebuffer`.
+
+`volatile uint32_t framecount;`: Number of frames read, updated by `dmaisr`
+
+`volatile uint32_t skippedframes;`: Number of frames not written to `framebuffer` because of overflow. Should be zero if all the data is correctly saved.
+
+
+### Setup Recording
+
+### End Recording
+
 
 ### FlexIO
 
@@ -58,18 +90,36 @@ The FlexIO inputs the data from the six ADCs into six 32bit shift buffers and re
 
 The FlexIO also outputs the clocks and syncs for the ADCs and chip.
 
-The FlexIO is setup in `double setupflexio(double freq)` in the `pindefs` library.
+The FlexIO is setup in `double setupflexio(double freq)` in the `flexiodmaisr` library.
 This sets up the FlexIO at a requested frame rate `freq` in Hz. It also returns the real frame rate used.
 
 ![FlexIO Architecture](../diagrams/flexioarc.png)
 
 ### DMA
 
+The DMA is setup by `setupflexiodma()` in the `flexiodmaisr` library.
+
+The DMA is triggered every ADC read. It transfers the bit reversed shift buffers 
+into a large (64 kB) circular buffer.
+
 ### Interrupt
+
+Every `numframesinterrupt` frames the DMA transfers, `dmaisr` is called.
+
+This interrupt packs the raw frame data in the DMA circular buffer and puts it onto the 
+frame circular buffer. It also checks if the frame circular buffer is full, and if it is, it turns on the blue LED, and skips the frames.
+
 
 ### Status and Error Detection
 
-### Global Variables and Functions
+The most likely error to occur is a frame buffer overflow. This happens because the
+ frames are not being sent off chip fast enough, or there is some latency issue. 
+If this happens new frames will not be written to the buffer until it has more space. Also, the blue LED will light, and global `skippedframes` will increase from zero.
+
+For the flexIO, if the DMA doesn't read the shifter buffer fast enough, `IMXRT_FLEXIO2_S.SHIFTERR` won't be 0x00 (this shouldn't ever be an issue).
+
+
+
 
 ## SDFAT
 
