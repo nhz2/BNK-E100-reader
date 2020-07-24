@@ -1,19 +1,12 @@
 //send out clocks
 #include <pindefs.h>
-#include <filestuff.h>
+#include <flexiodmaisr.h>
 #define PRREG(x) Serial.print(#x" 0x"); Serial.println(x,HEX)
 void setup() {
   Serial.begin(9600);
   while (!Serial);
   delay(1000);
-  pinMode(RGBpwrpin,OUTPUT);
-  digitalWrite(RGBpwrpin,HIGH);
-  pinMode(Rpin,OUTPUT);
-  digitalWrite(Rpin,HIGH);
-  pinMode(Gpin,OUTPUT);
-  digitalWrite(Gpin,HIGH);
-  pinMode(Bpin,OUTPUT);
-  digitalWrite(Bpin,HIGH);
+  rgb.begin();
   setupflexiodma();
   setupflexio(40000);
   PRREG(IMXRT_FLEXIO2_S.SHIFTSTAT);

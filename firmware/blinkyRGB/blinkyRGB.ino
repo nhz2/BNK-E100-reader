@@ -1,30 +1,21 @@
 //blink rgb led
 #include <pindefs.h>
 void setup() {
-  pinMode(RGBpwrpin,OUTPUT);
-  digitalWrite(RGBpwrpin,HIGH);
-  pinMode(Rpin,OUTPUT);
-  pinMode(Gpin,OUTPUT);
-  pinMode(Bpin,OUTPUT);
-  digitalWrite(Rpin,HIGH);
-  digitalWrite(Gpin,HIGH);
-  digitalWrite(Bpin,HIGH);
-
+  rgb.begin();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  digitalWrite(Rpin,LOW);
+  rgb.R(true);
   delay(200);
-  digitalWrite(Rpin,HIGH);
+  rgb.R(false);
   delay(200);
-  digitalWrite(Gpin,LOW);
+  rgb.G(true);
   delay(200);
-  digitalWrite(Gpin,HIGH);
+  rgb.G(false);
   delay(200);
-  digitalWrite(Bpin,LOW);
+  rgb.B(true);
   delay(200);
-  digitalWrite(Bpin,HIGH);
+  rgb.B(false);
   delay(1000);
-
 }

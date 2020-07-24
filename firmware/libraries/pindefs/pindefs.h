@@ -7,6 +7,8 @@
 
 #include <assert.h>     /* assert */
 #include <Arduino.h>
+#include <RGBLED.h>
+#include <DACx0501.h>
 
 
 //Name and Teensy 4.1 pin number //teensy 4.1 pin name
@@ -29,3 +31,7 @@ const int A3outpin = 8;// B1-00 //FLEXIO2-D16 ALT4 //FLEXIO3-D16 ALT9
 const int A2outpin = 7;// B1-01 //FLEXIO2-D17 ALT4 //FLEXIO3-D17 ALT9
 const int A1outpin = 6;// B0-10 //FLEXIO2-D10 ALT4
 const int Arangepin = 3;// EMC-05 //FLEXIO1-D05 ALT4
+
+RGBLED rgb(RGBpwrpin,Rpin,Gpin,Bpin);
+
+DACx0501 dac(Dsyncpin,Dsclkpin,Dsdinpin);

@@ -20,9 +20,9 @@ void errorHalt(const char* msg) {
     Serial.println(sd.sdErrorData(), HEX);
   }
   while (true) {
-    digitalWrite(Rpin,LOW);
+    rgb.R(true);
     delay(500);
-    digitalWrite(Rpin,HIGH);
+    rgb.R(false);
     delay(500);
   }
 }
@@ -32,18 +32,11 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
   delay(1000);
-  pinMode(RGBpwrpin,OUTPUT);
-  digitalWrite(RGBpwrpin,HIGH);
-  pinMode(Rpin,OUTPUT);
-  digitalWrite(Rpin,HIGH);
-  pinMode(Gpin,OUTPUT);
-  digitalWrite(Gpin,HIGH);
-  pinMode(Bpin,OUTPUT);
-  digitalWrite(Bpin,HIGH);
+  rgb.begin();
   pinMode(Arangepin,OUTPUT);
-  digitalWrite(Arangepin,HIGH);
+  digitalWrite(Arangepin,HIGH);// set ADC range to 0-5v
   pinMode(A6a0pin,OUTPUT);
-  digitalWrite(A6a0pin,HIGH);
+  digitalWrite(A6a0pin,HIGH);// set ADC6 to channel 2
   if (!sd.begin(SdioConfig(FIFO_SDIO))) {
     errorHalt("begin failed");
   }
@@ -90,9 +83,6 @@ void loop() {
   Serial.println("safe to remove file");
   Serial.printf("framecount: %d\n",framecount);
   Serial.printf("skippedframe: %d\n",skippedframes);
-//  PRREG(IMXRT_DMA.CR);
-//  PRREG(IMXRT_DMA.ERQ);
-//  PRREG(IMXRT_DMA.HRS);
   Serial.println("The next reg should be 0x0 if the DMA kept up with the data");
   PRREG(IMXRT_FLEXIO2_S.SHIFTERR);
   file.rewind();
@@ -138,9 +128,5 @@ void loop() {
   if (!file.close()) {
     errorHalt("file close failed");
   }
-  
-//  Serial.printf("%p\n",dmachannel.TCD->SADDR);
-//  Serial.printf("%p\n",dmachannel.TCD->DADDR);
-//  Serial.printf("%d\n",bigbuffer[1]);
   while(1);//done
 }

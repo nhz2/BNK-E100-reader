@@ -307,7 +307,7 @@ void dmaisr(){
   uint32_t final_framebufferwritepointer= framebufferwritepointer+frame_buftransize;
   if ((final_framebufferwritepointer-framebufferreadpointer)%framebuffersize < (framebufferwritepointer-framebufferreadpointer)%framebuffersize){
     //over run occured, turn on blue led
-    digitalWrite(Bpin,LOW);
+    rgb.B(true);
     //skip frames
     dmabufferreadpointer += numframes2process*10*numshiftbuf*4;
     dmabufferreadpointer= dmabufferreadpointer%dmabuffersize;
