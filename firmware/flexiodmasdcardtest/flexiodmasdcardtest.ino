@@ -2,6 +2,31 @@
 #include <pindefs.h>
 #include <filestuff.h>
 #include <AD7866parsing.h>
+#include "SdFat.h"
+/*********** SETUP SDCARD *****************/
+const uint8_t SD_CS_PIN = SS;
+SdFs sd;
+FsFile file;
+
+void errorHalt(const char* msg) {
+  Serial.print("Error: ");
+  Serial.println(msg);
+  if (sd.sdErrorCode()) {
+    if (sd.sdErrorCode() == SD_CARD_ERROR_ACMD41) {
+      Serial.println("Try power cycling the SD card.");
+    }
+    printSdErrorSymbol(&Serial, sd.sdErrorCode());
+    Serial.print(", ErrorData: 0X");
+    Serial.println(sd.sdErrorData(), HEX);
+  }
+  while (true) {
+    digitalWrite(Rpin,LOW);
+    delay(500);
+    digitalWrite(Rpin,HIGH);
+    delay(500);
+  }
+}
+
 #define PRREG(x) Serial.print(#x" 0x"); Serial.println(x,HEX)
 void setup() {
   Serial.begin(9600);
@@ -19,6 +44,9 @@ void setup() {
   digitalWrite(Arangepin,HIGH);
   pinMode(A6a0pin,OUTPUT);
   digitalWrite(A6a0pin,HIGH);
+  if (!sd.begin(SdioConfig(FIFO_SDIO))) {
+    errorHalt("begin failed");
+  }
   
   delay(1000);
 }
@@ -29,6 +57,13 @@ void loop() {
   //Serial.println((framebufferwritepointer-framebufferreadpointer)%framebuffersize);
   int num32frames= 1000;
   sdcardinit();
+  /** initializes sd card file for recording.*/
+  if (!file.open("testfile1.bin", O_RDWR | O_CREAT)) {
+    errorHalt("open failed");
+  }
+  if (!file.truncate(0)) {
+    errorHalt("truncate failed");
+  }
   sdfileinit("testfile1.bin");
   setupflexiodma();
   setupflexio(1000);
@@ -39,7 +74,10 @@ void loop() {
     //Serial.println(framecount);
     //Serial.println((framebufferwritepointer-framebufferreadpointer)%framebuffersize);
     uint32_t t = micros();
-    sdfilewrite(&framebuffer[framebufferreadpointer], framesize*32);
+    /** Write to sd card file.*/
+    if (framesize*32 != file.write(&framebuffer[framebufferreadpointer], framesize*32)) {
+      errorHalt("write failed");
+    }
     framebufferreadpointer= (framebufferreadpointer+framesize*32)%framebuffersize;
     t = micros() - t;
     if(t>maxtime) maxtime = t;
@@ -97,7 +135,9 @@ void loop() {
     
   }
   //then close file
-  sdfileclose();
+  if (!file.close()) {
+    errorHalt("file close failed");
+  }
   
 //  Serial.printf("%p\n",dmachannel.TCD->SADDR);
 //  Serial.printf("%p\n",dmachannel.TCD->DADDR);
