@@ -41,7 +41,7 @@ Here is what the signals should look like (note: the teensy logic level is 3.3V 
 
 ![Signal Timing](../diagrams/cclkcsclk.png)
 
-## Background Software During a Recording 
+## Background Tasks During a Recording 
 
 https://github.com/wramsdell/TriantaduoWS2811 is a project that I used as a working 
 example that uses DMA and FlexIO to do high speed IO on a teensy 4. 
@@ -74,12 +74,6 @@ returns the real frequency in Hz of reading a frame.
 `volatile uint32_t framecount;`: Number of frames read, updated by `dmaisr`
 
 `volatile uint32_t skippedframes;`: Number of frames not written to `framebuffer` because of overflow. Should be zero if all the data is correctly saved.
-
-
-### Setup Recording
-
-### End Recording
-
 
 ### FlexIO
 
@@ -119,10 +113,25 @@ If this happens new frames will not be written to the buffer until it has more s
 For the flexIO, if the DMA doesn't read the shifter buffer fast enough, `IMXRT_FLEXIO2_S.SHIFTERR` won't be 0x00 (this shouldn't ever be an issue).
 
 
-
-
 ## SDFAT
+
+SdFat by greiman from https://github.com/greiman/SdFat-beta is the SD card library I am using. It is included in the `libraries` directory.
 
 ## DAC
 
+There is a DAC that sets the reference electrode voltage.
+
 ## RGB LED
+
+The RGB LED turns blue on if frames are skipped (probably because the SD card writing
+is too slow)
+
+The RGB LED blinks red if there is a fatal error with the SD card or flexIO. If this happens power cycle the device.
+
+The RGB LED green is on during a recording.
+
+## Serial Protocol
+
+
+
+

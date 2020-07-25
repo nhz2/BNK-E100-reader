@@ -194,13 +194,22 @@ void closeflexio(){
 
 
 /************ DMA ISR Globals *******/
-const uint32_t framebuffersize = 1<<18; //256 kB buffer
 const uint32_t framesize = 256;// frame size in bytes
-volatile uint8_t framebuffer[framebuffersize];
-volatile uint32_t framebufferwritepointer;
-volatile uint32_t framebufferreadpointer;
-volatile uint32_t framecount;
-volatile uint32_t skippedframes;
+const uint32_t frames_per_chunk= 32;
+const uint32_t framechunksize= frames_per_chunk*framesize;
+const uint32_t framebuffersize = framechunksize*50; //frame buffer size in bytes
+DMAMEM volatile uint8_t framebuffer[framebuffersize];
+volatile uint32_t framebufferwritepointer=0;
+volatile uint32_t framebufferreadpointer=0;
+
+inline uint32_t numbytesinframebuffer(){
+  return   (framebufferwritepointer-framebufferreadpointer)%framebuffersize;
+}
+
+volatile int32_t userdata0;
+volatile int32_t userdata1;
+volatile uint32_t framecount=0;
+volatile uint32_t skippedframes=0;
 volatile bool firstint;
 
 
@@ -275,7 +284,7 @@ The frame is packed as {framenumber,rawdata,userdata0,userdata1,CRC32} in little
 CRC-32 has Alias CRC-32/ADCCP, PKZIP, Ethernet, 802.3
 dmod is the mod used by the DMA to write the data in a circular buffer
 */
-void packframe(volatile const uint8_t* rawdata, int mod, volatile uint8_t* destination, uint32_t framenumber, uint32_t userdata0, uint32_t userdata1){
+void packframe(volatile const uint8_t* rawdata, int mod, volatile uint8_t* destination, uint32_t framenumber, int32_t userdata0, int32_t userdata1){
   //copy memory to destination
   volatile uint8_t* initdest= destination;
   *((uint32_t*)(destination))= framenumber;
@@ -285,9 +294,9 @@ void packframe(volatile const uint8_t* rawdata, int mod, volatile uint8_t* desti
     destination++;
     rawdata= addoffset(rawdata, mod, 1);
   }
-  *((uint32_t*)(destination))= userdata0;
+  *((int32_t*)(destination))= userdata0;
   destination+= 4;
-  *((uint32_t*)(destination))= userdata1;
+  *((int32_t*)(destination))= userdata1;
   destination+= 4;
   *((uint32_t*)(destination))= CRC32.crc32(initdest, 252);
   return;
@@ -316,7 +325,7 @@ void dmaisr(){
   } else{
     //write frames to buffer
     for (int i=0; i<numframes2process; i++){
-      packframe(&dmabuffer[dmabufferreadpointer],DMABUFFERSIZEPOW,&framebuffer[framebufferwritepointer],framecount,0,0);
+      packframe(&dmabuffer[dmabufferreadpointer],DMABUFFERSIZEPOW,&framebuffer[framebufferwritepointer],framecount,userdata0,userdata1);
       dmabufferreadpointer += 10*numshiftbuf*4;
       dmabufferreadpointer= dmabufferreadpointer%dmabuffersize;
       framebufferwritepointer= (framebufferwritepointer+framesize)%framebuffersize;

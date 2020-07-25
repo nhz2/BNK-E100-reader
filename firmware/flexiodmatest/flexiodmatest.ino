@@ -10,7 +10,7 @@ void setup() {
   setupflexiodma();
   setupflexio(40000);
   PRREG(IMXRT_FLEXIO2_S.SHIFTSTAT);
-  Serial.printf("%p\n",bigbuffer);
+  Serial.printf("%p\n",dmabuffer);
   
 }
 
@@ -29,6 +29,6 @@ void loop() {
   PRREG(IMXRT_FLEXIO2_S.SHIFTERR);
   Serial.printf("%p\n",dmachannel.TCD->SADDR);
   Serial.printf("%p\n",dmachannel.TCD->DADDR);
-  Serial.printf("%d\n",bigbuffer[1]);
+  Serial.printf("%d\n",dmabuffer[1]);
   
 }

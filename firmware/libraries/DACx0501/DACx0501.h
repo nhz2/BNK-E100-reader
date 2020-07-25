@@ -32,6 +32,8 @@ class DACx0501 {
 
     /**Set the output voltage. */
     void setvoltage(float out){
+      //sanitize NaN as 0
+      if(isnan(out)) out= 0.0;
       uint16_t data= (uint16_t)(out*(1.0f/5.0f*65536.0f)+0.5f);
       if(out<=0) data=0;
       if(out>=5) data=0xFFFF;

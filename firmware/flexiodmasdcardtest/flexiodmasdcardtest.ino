@@ -1,6 +1,6 @@
 //send out clocks
 #include <pindefs.h>
-#include <filestuff.h>
+#include <flexiodmaisr.h>
 #include <AD7866parsing.h>
 #include "SdFat.h"
 /*********** SETUP SDCARD *****************/
@@ -49,7 +49,6 @@ void loop() {
   //wait until there is new data in frame buffer.
   //Serial.println((framebufferwritepointer-framebufferreadpointer)%framebuffersize);
   int num32frames= 1000;
-  sdcardinit();
   /** initializes sd card file for recording.*/
   if (!file.open("testfile1.bin", O_RDWR | O_CREAT)) {
     errorHalt("open failed");
@@ -57,7 +56,6 @@ void loop() {
   if (!file.truncate(0)) {
     errorHalt("truncate failed");
   }
-  sdfileinit("testfile1.bin");
   setupflexiodma();
   setupflexio(1000);
   int maxtime = 0;
@@ -68,7 +66,7 @@ void loop() {
     //Serial.println((framebufferwritepointer-framebufferreadpointer)%framebuffersize);
     uint32_t t = micros();
     /** Write to sd card file.*/
-    if (framesize*32 != file.write(&framebuffer[framebufferreadpointer], framesize*32)) {
+    if (framesize*32 != file.write((void*)(&framebuffer[framebufferreadpointer]), framesize*32)) {
       errorHalt("write failed");
     }
     framebufferreadpointer= (framebufferreadpointer+framesize*32)%framebuffersize;
