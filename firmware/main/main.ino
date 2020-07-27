@@ -54,27 +54,42 @@ void setup() {
   if (!file.open("recording.bin", O_RDWR | O_CREAT)) {
     errorHalt("open failed");
   }
+  if (!file.truncate(0)) {
+          errorHalt("truncate failed");
+  }
+//  //prefill file with 16 GB of zeros
+//  uint8_t zeros[512]={0};
+//  for (int i=0; i<(1<<23); i++){
+//    if (512 != file.write(zeros, 512)) {
+//      errorHalt("write failed");
+//    }
+//  }
+  if (!file.seek(0)) {
+    errorHalt("file seek failed");
+  }
   delay(1000);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if(Serial.available() && (!inrecording || numbytesinframebuffer()<framebuffersize/2)){
+  if(Serial.available() && (!inrecording || numbytesinframebuffer()<framebuffersize/4)){
     //proccess serial commands if available and half empty
-    byte cmd= Serial.read();
+    char cmd= Serial.read();
     switch(cmd)
     {
-      case 'a'://resend ack
+      case 'a':{//resend ack
         Serial.readStringUntil('\n');//clear out rest of command.
         Serial.println('a');
         break;
-      case 'd'://set DAC voltage
+      }
+      case 'd':{//set DAC voltage
         float daccmd= Serial.parseFloat();
         dac.setvoltage(daccmd);
         Serial.readStringUntil('\n');//clear out rest of command.      
         Serial.println('a');
         break;
-      case 'r'://start recording
+      }
+      case 'r':{//start recording
         if(inrecording){
           Serial.readStringUntil('\n');//clear out rest of command.      
           Serial.println("in recording");
@@ -88,8 +103,8 @@ void loop() {
         userdata1= Serial.parseInt();
         digitalWrite(Arangepin,range);// set ADC range to 0-5v or 0-2.5v
         digitalWrite(A6a0pin,auxchannel-1);// set ADC6 to channel
-        if (!file.truncate(0)) {
-          errorHalt("truncate failed");
+        if (!file.seek(0)) {
+          errorHalt("file seek failed");
         }
         setupflexiodma();
         double realrate= setupflexio(framerate);
@@ -100,7 +115,8 @@ void loop() {
         rgb.G(true);
         framechunkssaved=0;
         break;
-      case 's'://status message
+      }
+      case 's':{//status message
         if(inrecording){
           Serial.print("1,");
           Serial.print(framechunkssaved);
@@ -124,7 +140,8 @@ void loop() {
           Serial.println('a');
           break;
         }
-      case 'e'://eject card
+      }
+      case 'e':{//eject card
         closeflexio();
         inrecording=false;
         rgb.G(false);
@@ -134,7 +151,8 @@ void loop() {
         Serial.readStringUntil('\n');//clear out rest of command.      
         Serial.println('a');
         break;
-      case 'f'://read out frame chunk
+      }
+      case 'f':{//read out frame chunk
         if(inrecording){
           Serial.readStringUntil('\n');//clear out rest of command.      
           Serial.println("in recording");
@@ -157,10 +175,12 @@ void loop() {
         Serial.readStringUntil('\n');//clear out rest of command.      
         Serial.println('a');
         break;
-      default:
+      }
+      default:{
         Serial.print(cmd);
         Serial.println(" not valid command");
         Serial.readStringUntil('\n');//clear out rest of command.      
+      }
     }
   }
 

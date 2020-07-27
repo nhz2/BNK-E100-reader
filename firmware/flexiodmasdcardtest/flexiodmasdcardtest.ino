@@ -48,16 +48,20 @@ void loop() {
   // put your main code here, to run repeatedly:
   //wait until there is new data in frame buffer.
   //Serial.println((framebufferwritepointer-framebufferreadpointer)%framebuffersize);
-  int num32frames= 1000;
+  int num32frames= 1<<19;
   /** initializes sd card file for recording.*/
   if (!file.open("testfile1.bin", O_RDWR | O_CREAT)) {
     errorHalt("open failed");
   }
+//  const uint64_t PREALLOCATE_SIZE= 1ULL<<38ULL;
+//  if (!file.preAllocate(PREALLOCATE_SIZE)) {
+//    //errorHalt("preAllocate failed");
+//  }
   if (!file.truncate(0)) {
     errorHalt("truncate failed");
   }
   setupflexiodma();
-  setupflexio(1000);
+  setupflexio(40000);
   int maxtime = 0;
   for(int i=0; i<num32frames; i++){
     while( (framebufferwritepointer-framebufferreadpointer)%framebuffersize < framesize*64);
@@ -84,7 +88,7 @@ void loop() {
   Serial.println("The next reg should be 0x0 if the DMA kept up with the data");
   PRREG(IMXRT_FLEXIO2_S.SHIFTERR);
   file.rewind();
-  for (int frm=0; frm<(num32frames*32); frm++){
+  for (int frm=0; frm<(1); frm++){
     uint32_t framenum;
     if (4 != file.read(&framenum, 4)) {
           errorHalt("read failed");

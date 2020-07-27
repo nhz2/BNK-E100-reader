@@ -197,8 +197,8 @@ void closeflexio(){
 const uint32_t framesize = 256;// frame size in bytes
 const uint32_t frames_per_chunk= 32;
 const uint32_t framechunksize= frames_per_chunk*framesize;
-const uint32_t framebuffersize = framechunksize*50; //frame buffer size in bytes
-DMAMEM volatile uint8_t framebuffer[framebuffersize];
+const uint32_t framebuffersize = framechunksize*32; //frame buffer size in bytes
+uint8_t framebuffer[framebuffersize];
 volatile uint32_t framebufferwritepointer=0;
 volatile uint32_t framebufferreadpointer=0;
 
