@@ -168,7 +168,7 @@ example:
 Eject card command:
     `"e\n"`
 response:
-    `"s\n"`
+    `"a\n"`
 
 Frame chunk readout command:
     f chunk id starts at 0
