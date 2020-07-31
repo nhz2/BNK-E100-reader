@@ -61,6 +61,7 @@ inline bool AD7866parser(uint32_t data,
       voltageA= vH;
       voltageB= vL;
     }
+    channel= channelH;
     return true;
   }
   INVALID:

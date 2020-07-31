@@ -5,10 +5,12 @@
 #pragma once
 
 #include <assert.h>     /* assert */
+#include <array>
 #include <Arduino.h>
 #include <FastCRC.h>
 #include <DMAChannel.h>
 #include "pindefs.h"
+
 
 /**
 Setup flexio at freq in Hz greater than 250.
@@ -23,9 +25,17 @@ double setupflexio(double freq){
   //this is the core flexio2/3 core freq
   int flexhz = 480'000'000 / 2 / 1;   // 480MHz/2= 240MHz
 
+  //Reset FLEXIO2/3
+  delayMicroseconds(10);
+  FLEXIO3_CTRL |= FLEXIO_CTRL_SWRST;
+  FLEXIO2_CTRL |= FLEXIO_CTRL_SWRST;
+  delayMicroseconds(10);//wait for reset to something cleared in the FlexIO clock domain??
+  FLEXIO3_CTRL &= ~FLEXIO_CTRL_SWRST;
+  FLEXIO2_CTRL &= ~FLEXIO_CTRL_SWRST;
+  delayMicroseconds(10);//wait for reset to something cleared in the FlexIO clock domain??
+
+
   int Asclkperiod = 12;// number of flexio clks in a Asclk period
-  //clear shifter overflow errors
-  IMXRT_FLEXIO2_S.SHIFTERR = 0xFF;
   //SCLK adc
   IMXRT_FLEXIO2_S.TIMCMP[0] = ((32*2-1)<<8)|(Asclkperiod/2-1);
   IMXRT_FLEXIO2_S.TIMCFG[0] = FLEXIO_TIMCFG_TIMOUT(3) | //Timer Output: 0 - Timer output is logic one when enabled and is not affected by timer reset. 1 - Timer output is logic zero when enabled and is not affected by timer reset. 2 - Timer output is logic one when enabled and on timer reset. 3 - Timer output is logic zero when enabled and on timer reset.
@@ -194,17 +204,19 @@ void closeflexio(){
 
 
 /************ DMA ISR Globals *******/
-const uint32_t framesize = 256;// frame size in bytes
+struct Frame
+{
+  uint32_t framenumber;
+  uint32_t framedata[60];
+  uint32_t userdata0;
+  uint32_t userdata1;
+  uint32_t crc;
+};
+
+const uint32_t framesize = sizeof(Frame);// frame size in bytes
+
 const uint32_t frames_per_chunk= 32;
 const uint32_t framechunksize= frames_per_chunk*framesize;
-const uint32_t framebuffersize = framechunksize*32; //frame buffer size in bytes
-uint8_t framebuffer[framebuffersize];
-volatile uint32_t framebufferwritepointer=0;
-volatile uint32_t framebufferreadpointer=0;
-
-inline uint32_t numbytesinframebuffer(){
-  return   (framebufferwritepointer-framebufferreadpointer)%framebuffersize;
-}
 
 volatile int32_t userdata0;
 volatile int32_t userdata1;
@@ -212,11 +224,82 @@ volatile uint32_t framecount=0;
 volatile uint32_t skippedframes=0;
 volatile bool firstint;
 
+namespace framefifo{
+  const uint32_t buffersize0 = 4*256; //frame buffer0 size in frames
+  const uint32_t buffersize1 = 4*400; //frame buffer1 size in frames
+  const uint32_t buffersize= buffersize0+buffersize1;
+  //Using both types of avalible memory to get an extra large fifo.
+  Frame buffer0[buffersize0];
+  DMAMEM Frame buffer1[buffersize1];
+  std::array<Frame*,2> buffers={buffer0,buffer1};
+  std::array<const uint32_t,2> buffersizes={buffersize0,buffersize1};
+  volatile uint32_t writepointer= 0;
+  volatile uint32_t readpointer= 0;
+
+  /** Reset the fifo, erasing all data*/ 
+  void reset(){
+    writepointer= 0;
+    readpointer= 0;
+  }
+
+
+  /** How many frames can be read till empty*/
+  inline uint32_t framestoread(){
+    return   (writepointer-readpointer)%(buffersize);
+  }
+
+  /** How many frames can be written till full with no overflow*/
+  inline uint32_t framestowrite(){
+    return   (readpointer-writepointer-1U)%(buffersize);
+  }
+
+  /** Push 1 frame to the the fifo*/
+  inline void push(Frame frame){
+    uint32_t subpointer= writepointer;
+    uint32_t bufid= 0;
+    if (subpointer>=buffersizes[0]){
+      //in buffer1
+      subpointer-= buffersizes[0];
+      bufid= 1;
+    } 
+    buffers[bufid][subpointer]= frame;
+    subpointer++;
+    if(subpointer>=buffersizes[bufid]){
+      //switch buffers
+      subpointer=0;
+      bufid^=1;
+    }
+    writepointer= subpointer + bufid*buffersizes[0];
+  }
+
+  /** Pop 1 frame from the fifo and store in frame*/
+  inline Frame pop(){
+    Frame frame;
+    uint32_t subpointer= readpointer;
+    uint32_t bufid= 0;
+    if (subpointer>=buffersizes[0]){
+      //in buffer1
+      subpointer-= buffersizes[0];
+      bufid= 1;
+    } 
+    frame= buffers[bufid][subpointer];
+    subpointer++;
+    if(subpointer>=buffersizes[bufid]){
+      //switch buffers
+      subpointer=0;
+      bufid^=1;
+    }
+    readpointer= subpointer + bufid*buffersizes[0];
+    return frame;
+  }
+  
+}
+
 
 /************ DMA Buffer and configs *******/
 #define DMABUFFERSIZEPOW 16
 const int dmabuffersize = 1<<DMABUFFERSIZEPOW; //64 kB buffer
-volatile uint8_t dmabuffer[dmabuffersize] __attribute__ ((aligned (1<<DMABUFFERSIZEPOW)));
+uint8_t dmabuffer[dmabuffersize] __attribute__ ((aligned (1<<DMABUFFERSIZEPOW)));
 volatile int dmabufferreadpointer;
 const int numframesinterrupt = 64; // number of frames per interrupt
 const int numinterrupt = numframesinterrupt*10; // number of dma requests per interrupt
@@ -232,10 +315,9 @@ Setup DMA from FLEXIO2 uses numshiftbuf buffers starting at 0
 Do this before enabling flexio2
 numinterrupt is the number of transfers before an interrupt of dmaisr
 */
-void setupflexiodma(){
+inline void setupflexiodma(){
   dmachannel.disable();
-  framebufferwritepointer= 0;
-  framebufferreadpointer= 0;
+  framefifo::reset();
   framecount= 0;
   skippedframes= 0;
   dmabufferreadpointer= 0;
@@ -272,7 +354,7 @@ FastCRC32 CRC32;
 
 /** Add an offset to the pointer x like the DMA would with mod,
   only affecting mod LSb of the pointer address.*/
-uint8_t* addoffset(uint8_t* x, int mod, int offset){
+inline uint8_t* addoffset(uint8_t* x, int mod, int offset){
   uint32_t xloc= (uint32_t)x;
   xloc= ( (xloc+offset) & ~(-1<<mod) ) | ( (xloc) & (-1<<mod) );
   return (uint8_t*) xloc;
@@ -284,21 +366,16 @@ The frame is packed as {framenumber,rawdata,userdata0,userdata1,CRC32} in little
 CRC-32 has Alias CRC-32/ADCCP, PKZIP, Ethernet, 802.3
 dmod is the mod used by the DMA to write the data in a circular buffer
 */
-void packframe(volatile const uint8_t* rawdata, int mod, volatile uint8_t* destination, uint32_t framenumber, int32_t userdata0, int32_t userdata1){
+inline void packframe(uint8_t* rawdata, int mod, Frame& outframe, uint32_t framenumber, int32_t userdata0, int32_t userdata1){
   //copy memory to destination
-  volatile uint8_t* initdest= destination;
-  *((uint32_t*)(destination))= framenumber;
-  destination+= 4;
-  for (int i=0; i<numshiftbuf*4*10; i++){
-    *destination= *rawdata;
-    destination++;
-    rawdata= addoffset(rawdata, mod, 1);
+  outframe.framenumber= framenumber;
+  for (int i=0; i<numshiftbuf*10; i++){
+    outframe.framedata[i]= *(reinterpret_cast<uint32_t*>(rawdata));
+    rawdata= addoffset(rawdata, mod, 4);
   }
-  *((int32_t*)(destination))= userdata0;
-  destination+= 4;
-  *((int32_t*)(destination))= userdata1;
-  destination+= 4;
-  *((uint32_t*)(destination))= CRC32.crc32(initdest, 252);
+  outframe.userdata0= userdata0;
+  outframe.userdata1= userdata1;
+  outframe.crc= CRC32.crc32((uint8_t*)(&outframe), 252);
   return;
 }
 
@@ -312,9 +389,7 @@ void dmaisr(){
     firstint=false;
   }
   //check for over run in frame buffer
-  uint32_t frame_buftransize = numframes2process*framesize;
-  uint32_t final_framebufferwritepointer= framebufferwritepointer+frame_buftransize;
-  if ((final_framebufferwritepointer-framebufferreadpointer)%framebuffersize < (framebufferwritepointer-framebufferreadpointer)%framebuffersize){
+  if (framefifo::framestowrite()<numframes2process){
     //over run occured, turn on blue led
     rgb.B(true);
     //skip frames
@@ -325,10 +400,11 @@ void dmaisr(){
   } else{
     //write frames to buffer
     for (int i=0; i<numframes2process; i++){
-      packframe(&dmabuffer[dmabufferreadpointer],DMABUFFERSIZEPOW,&framebuffer[framebufferwritepointer],framecount,userdata0,userdata1);
+      Frame tempframe;
+      packframe(&dmabuffer[dmabufferreadpointer],DMABUFFERSIZEPOW,tempframe,framecount,userdata0,userdata1);
       dmabufferreadpointer += 10*numshiftbuf*4;
       dmabufferreadpointer= dmabufferreadpointer%dmabuffersize;
-      framebufferwritepointer= (framebufferwritepointer+framesize)%framebuffersize;
+      framefifo::push(tempframe);
       framecount++;
     }
   }

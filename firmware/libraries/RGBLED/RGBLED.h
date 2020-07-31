@@ -17,10 +17,10 @@ class RGBLED {
     int bpin;
 
     RGBLED(int _anodepin, int _rpin, int _gpin, int _bpin):
+      anodepin(_anodepin),
       rpin(_rpin),
       gpin(_gpin),
-      bpin(_bpin),
-      anodepin(_anodepin){}
+      bpin(_bpin){}
 
     void begin(){
       pinMode(rpin,OUTPUT);

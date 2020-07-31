@@ -8,7 +8,7 @@
 bool inrecording= false;
 uint32_t framechunkssaved= 0;
 uint32_t framechunkstosave= 0;
-uint8_t lastsavedframe[framesize]={0};
+Frame lastsavedframe{0};
 
 
 
@@ -51,28 +51,12 @@ void setup() {
   if (!sd.begin(SdioConfig(FIFO_SDIO))) {
     errorHalt("begin failed");
   }
-  if (!file.open("recording.bin", O_RDWR | O_CREAT)) {
-    errorHalt("open failed");
-  }
-  if (!file.truncate(0)) {
-          errorHalt("truncate failed");
-  }
-//  //prefill file with 16 GB of zeros
-//  uint8_t zeros[512]={0};
-//  for (int i=0; i<(1<<23); i++){
-//    if (512 != file.write(zeros, 512)) {
-//      errorHalt("write failed");
-//    }
-//  }
-  if (!file.seek(0)) {
-    errorHalt("file seek failed");
-  }
   delay(1000);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if(Serial.available() && (!inrecording || numbytesinframebuffer()<framebuffersize/4)){
+  if(Serial.available() && (!inrecording || framefifo::framestoread()<framefifo::buffersize/8)){
     //proccess serial commands if available and half empty
     char cmd= Serial.read();
     switch(cmd)
@@ -103,9 +87,13 @@ void loop() {
         userdata1= Serial.parseInt();
         digitalWrite(Arangepin,range);// set ADC range to 0-5v or 0-2.5v
         digitalWrite(A6a0pin,auxchannel-1);// set ADC6 to channel
-        if (!file.seek(0)) {
-          errorHalt("file seek failed");
+        if (!file.open("recording.bin", O_WRONLY | O_CREAT)) {
+          errorHalt("open failed");
         }
+        if (!file.truncate(0)) {
+          errorHalt("truncate failed");
+        }
+        delay(2000);//wait for 2s for file to be ready
         setupflexiodma();
         double realrate= setupflexio(framerate);
         Serial.println(realrate);
@@ -119,27 +107,18 @@ void loop() {
       case 's':{//status message
         if(inrecording){
           Serial.print("1,");
-          Serial.print(framechunkssaved);
-          Serial.print(",");
-          Serial.print(skippedframes);
-          Serial.print(",");
-          Serial.write(lastsavedframe,framesize);
-          Serial.println();
-          Serial.readStringUntil('\n');//clear out rest of command.      
-          Serial.println('a');
-          break;
         } else {
           Serial.print("0,");
-          Serial.print(framechunkssaved);
-          Serial.print(",");
-          Serial.print(skippedframes);
-          Serial.print(",");
-          Serial.write(lastsavedframe,framesize);
-          Serial.println();
-          Serial.readStringUntil('\n');//clear out rest of command.      
-          Serial.println('a');
-          break;
         }
+        Serial.print(framechunkssaved);
+        Serial.print(",");
+        Serial.print(skippedframes);
+        Serial.print(",");
+        Serial.write(reinterpret_cast<uint8_t*>(&lastsavedframe),framesize);
+        Serial.println();
+        Serial.readStringUntil('\n');//clear out rest of command.      
+        Serial.println('a');
+        break;
       }
       case 'e':{//eject card
         closeflexio();
@@ -158,8 +137,8 @@ void loop() {
           Serial.println("in recording");
           break;
         }
-        if (!file.sync()) {
-          errorHalt("file sync failed");
+        if (!file.open("recording.bin", O_RDONLY)) {
+          errorHalt("open failed");
         }
         int chunkid= Serial.parseInt();
         uint64_t pos= ((uint64_t)chunkid)*framechunksize;
@@ -171,6 +150,9 @@ void loop() {
           errorHalt("file read failed");
         }
         Serial.write(chunkdata,framechunksize);
+        if (!file.close()) {
+          errorHalt("file close failed");
+        }
         Serial.println();
         Serial.readStringUntil('\n');//clear out rest of command.      
         Serial.println('a');
@@ -189,21 +171,27 @@ void loop() {
     if(IMXRT_FLEXIO2_S.SHIFTERR!=0) {
       errorHalt("FlexIO2 DMA error");
     }
-    if(numbytesinframebuffer() >= framechunksize*2){
+    if(framefifo::framestoread() >= frames_per_chunk*2){
       //write a frame chunk
+      Frame chunk[frames_per_chunk];
       /** Write to sd card file.*/
-      if (framechunksize != file.write((void*)(&framebuffer[framebufferreadpointer]), framechunksize)) {
+      for(int i=0; i<frames_per_chunk; i++){
+        chunk[i]= framefifo::pop();
+      }
+      if (framechunksize != file.write((void*)(&chunk[0]), framechunksize)) {
         errorHalt("write failed");
       }
       //save last saved frame for GUI uses
-      memcpy(lastsavedframe,&framebuffer[framebufferreadpointer+framechunksize-framesize],framesize);
-      framebufferreadpointer= (framebufferreadpointer+framechunksize)%framebuffersize;
+      lastsavedframe= chunk[frames_per_chunk-1];
       framechunkssaved++;
     }
     if(framechunkssaved>=framechunkstosave){
       closeflexio();
       inrecording=false;
       rgb.G(false);
+      if (!file.close()) {
+          errorHalt("file close failed");
+      }
     }
   }
 }

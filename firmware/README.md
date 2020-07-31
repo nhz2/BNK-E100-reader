@@ -152,7 +152,7 @@ Recording start command:
     r frame rate(Hz), number of frame chunks(32 frames), aux channel, 
     range(0 is 0V-2.5V and 1 is 0V-5V),user data 0, user data 1
 example:
-    `"r40000.0,131072,2,1,-55,109\na\n"`
+    `"r40000.0,131072,2,1,-55,109\n"`
 response:
     real frame rate(Hz)
 example:
@@ -178,3 +178,12 @@ response:
     256*32 bytes of raw data and a new line and ack.
 example:
     `"fajknj.......\na\n"`
+
+Sandisk 32GB Extreme plus
+[0, 1088, 17088]
+[10000, 20000, 40000]
+
+Greenlient
+
+[0, 0, 0]
+[40000, 20000, 10000]
