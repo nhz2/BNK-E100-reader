@@ -7,7 +7,7 @@ Latest Revision: 19 JUL 2020
 
 ## Overview
 
-The main goal is to setup a recording from the BNKChipV4_E100, save the recording to a file, and enable analysis of the data in python. The secondary goal is to monitor the recording in real time in a GUI.
+The main goal is to setup a recording from the BNKChipV4_E100, save the recording to a file, and enable analysis of the data in python.
 
 [Firmware](./firmware)
 
