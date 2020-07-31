@@ -189,17 +189,3 @@ def decodeframe(framedatas):
 
 if __name__ == '__main__':
     testskippedframes()
-    # portname=findteensy()
-    # if (not portname):
-    #     print('no teensy found')
-    # with serial.Serial(portname, 4000000, timeout=10) as ser:
-    #     recording_start(ser,40000,1000,2,1,0,0)
-    #     time.sleep(10)
-    #     statusmessage= status(ser)
-    #     while(statusmessage[0]==1):
-    #         #print("checking status again")
-    #         #print(statusmessage)
-    #         time.sleep(10)
-    #         statusmessage= status(ser)
-    # print("frameskip: %d"%(statusmessage[2]))
-    # print(decodeframe(statusmessage[-1])[1])

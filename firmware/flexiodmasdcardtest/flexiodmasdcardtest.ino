@@ -48,9 +48,9 @@ void loop() {
   // put your main code here, to run repeatedly:
   //wait until there is new data in frame buffer.
   //Serial.println((framebufferwritepointer-framebufferreadpointer)%framebuffersize);
-  int num32frames= 1<<19;
+  int num32frames= 10000;
   /** initializes sd card file for recording.*/
-  if (!file.open("testfile1.bin", O_RDWR | O_CREAT)) {
+  if (!file.open("recording.bin", O_RDWR | O_CREAT)) {
     errorHalt("open failed");
   }
 //  const uint64_t PREALLOCATE_SIZE= 1ULL<<38ULL;
@@ -64,16 +64,17 @@ void loop() {
   setupflexio(40000);
   int maxtime = 0;
   for(int i=0; i<num32frames; i++){
-    while( (framebufferwritepointer-framebufferreadpointer)%framebuffersize < framesize*64);
+    while( framefifo::framestoread() < 64);
     //write 32 frames
-    //Serial.println(framecount);
-    //Serial.println((framebufferwritepointer-framebufferreadpointer)%framebuffersize);
+    Frame chunk[frames_per_chunk];
+    for(int i=0; i<frames_per_chunk; i++){
+        chunk[i]= framefifo::pop();
+    }
     uint32_t t = micros();
     /** Write to sd card file.*/
-    if (framesize*32 != file.write((void*)(&framebuffer[framebufferreadpointer]), framesize*32)) {
-      errorHalt("write failed");
+    if (framechunksize != file.write((void*)(&chunk[0]), framechunksize)) {
+        errorHalt("write failed");
     }
-    framebufferreadpointer= (framebufferreadpointer+framesize*32)%framebuffersize;
     t = micros() - t;
     if(t>maxtime) maxtime = t;
   }
@@ -82,7 +83,6 @@ void loop() {
 
   delay(1000);
   Serial.printf("max write time: %d\n",maxtime);
-  Serial.println("safe to remove file");
   Serial.printf("framecount: %d\n",framecount);
   Serial.printf("skippedframe: %d\n",skippedframes);
   Serial.println("The next reg should be 0x0 if the DMA kept up with the data");
@@ -130,5 +130,6 @@ void loop() {
   if (!file.close()) {
     errorHalt("file close failed");
   }
+  Serial.println("safe to remove file");
   while(1);//done
 }
