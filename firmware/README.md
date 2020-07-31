@@ -41,6 +41,13 @@ Here is what the signals should look like (note: the teensy logic level is 3.3V 
 
 ![Signal Timing](../diagrams/cclkcsclk.png)
 
+### Scope Traces at 40kHz Framerate
+
+![Trace](../diagrams/CSCLKandCCLKandACSscope40k.png)
+
+![Trace](../diagrams/ASCLKandACSandCCLKscope40k.png)
+
+
 ## Background Tasks During a Recording 
 
 https://github.com/wramsdell/TriantaduoWS2811 is a project that I used as a working 
