@@ -244,4 +244,39 @@ example:
 
     `"fajknj.......\na\n"`
     
+## Install
+
+1. Follow the instructions on https://www.pjrc.com/teensy/td_download.html to install Arduino and Teensyduino
+
+2. Clone or download this repo https://github.com/nhz2/BNK-E100-reader
+
+3. Open Arduino preferences and set the Sketchbook location to the repo/firmware.
+For example, for me it is `/Users/nathan/GitHub/BNK-E100-reader/firmware`
+
+5. Open `blinkyRGB/blinkyRGB.ino` in the Arduino editor. 
+
+4. In the Tools tab, set the board to "Teensy 4.1"
+
+5. Connected the board with USB.
+
+6. In the Tools tab, set the port to the one connected to the board.
+
+6. Press the right arrow upload button in the top left of the window.
+
+1. If everything is working the RGB led should blink red, green, and blue.
+
+1. Open `main/main.ino` in the Arduino editor. 
+
+1. Press the right arrow upload button in the top left of the window.
+
+1. Open the serial monitor (the button in the top right of the window).
+
+1. Test sending `a` with newline after every command and make sure you recieve an `a` in response.
+
+1. Close the serial monitor.
+
+1. Now the firmware is installed.
+
+
+    
     
