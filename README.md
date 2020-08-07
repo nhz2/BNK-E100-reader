@@ -1,9 +1,9 @@
-# Firmware and Desktop Software for Reading the BNKChipV4_E100 README
+# Firmware and Desktop Software for Reading the BNKChipV4_E100 README WIP
 Started by Nathan Zimmerberg on 19 JUL 2020
 
 **Authors** Nathan Zimmerberg (nhz2@cornell.edu)
 
-Latest Revision: 19 JUL 2020
+Latest Revision: 7 AUG 2020
 
 ## Overview
 
