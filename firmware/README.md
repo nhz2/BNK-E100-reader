@@ -166,6 +166,7 @@ The RGB LED green is on during a recording.
 The serial protocol is command and response where the PC is the commander and the device is the responder.
 All commands end with a newline.
 The device will finish a response with `"a\n"` when it is ready for a new command.
+Sometimes the device will use with `"\r\n"` instead of `"\n"` in responses, but commands should just use `"\n"`.
 
 ### NOP command:
 
