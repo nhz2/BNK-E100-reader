@@ -10,7 +10,7 @@ Latest Revision: 19 JUL 2020
 The main goal of the firmware is to:
 
 1. Setup a recording from the BNKChipV4_E100 with a specified framerate, reference electrode voltage(Vref), and number of frames. 
-2. Run the recording. Generate the signals to drive the chip and analog to digital converters (ADC). Stream the data from the ADCs into a SD card.
+2. Run the recording. Generate the signals to drive the chip and analog to digital converters (ADC). Stream the data from the ADCs into an SD card.
 3. Send the final data to the attached computer via USB, along with any errors that occurred.
 
 ## Hardware Overview
@@ -65,18 +65,42 @@ returns the real frequency in Hz of reading a frame.
 
 `void closeflexio()`: Disable the flexIO.
 
-`void setupflexiodma()`: Setup DMA from FLEXIO2 Do this before `setupflexio`
+`void setupflexiodma()`: Setup DMA from FLEXIO2. Do this before calling `setupflexio`
 
-`const uint32_t framebuffersize = 1<<18; //256 kB buffer`
+Frame data struct.
+
+```
+struct Frame
+{
+  /** The frame number(starting at 0). This increases at 
+      the real framerate even if some frames are skipped.*/
+  uint32_t framenumber;
+  
+  /** The raw data from the ADCs. framedata[0] is row 0, ADC1, 
+      framedata[1] is row 0, ADC2 ...*/
+  uint32_t framedata[60];
+  
+  uint32_t userdata0;
+  uint32_t userdata1;
+  uint32_t crc;
+};
+```
+
+`const uint32_t framefifo::buffersize`: Total number of frames that can be stored in the fifo.
+
+`uint32_t framefifo::framestoread()`: How many frames can be read till empty.
+
+`uint32_t framefifo::framestowrite()`: How many frames can be written till full with no overflow.
+
+`void framefifo::push(Frame frame)`: Push 1 frame to the the fifo, used by the ISR.
+
+`Frame framefifo::pop()`: Pop 1 frame from the the fifo.
+
+`volatile int32_t userdata0`: Userdata written to the frames in the ISR.
+
+`volatile int32_t userdata1`: Userdata written to the frames in the ISR.
 
 `const uint32_t framesize = 256;// frame size in bytes`
-
-`volatile uint8_t framebuffer[framebuffersize];`: The large circular buffer of frames to send out.
-
-`volatile uint32_t framebufferwritepointer;`: The `framebuffer` write pointer, update by 
-`dmaisr`.
-
-`volatile uint32_t framebufferreadpointer;`: The `framebuffer` read pointer, main program should update this as it reads frames out of `framebuffer`.
 
 `volatile uint32_t framecount;`: Number of frames read, updated by `dmaisr`
 
@@ -185,12 +209,4 @@ response:
     256*32 bytes of raw data and a new line and ack.
 example:
     `"fajknj.......\na\n"`
-
-Sandisk 32GB Extreme plus
-[0, 1088, 17088]
-[10000, 20000, 40000]
-
-Greenlient
-
-[0, 0, 0]
-[40000, 20000, 10000]
+    
