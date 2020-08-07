@@ -167,7 +167,7 @@ The serial protocol is command and response where the PC is the commander and th
 All commands end with a newline.
 The device will finish a response with `"a\n"` when it is ready for a new command.
 
-NOP command:
+### NOP command:
 
     `"a\n"`
     
@@ -175,7 +175,7 @@ response:
 
     `"a\n"`
 
-DAC set voltage command:
+### DAC set voltage command:
 
     d<voltage(V)>
     
@@ -187,7 +187,7 @@ response:
 
     `"a\n"`
 
-Recording start command:
+### Recording start command:
 
     r<frame rate(Hz)>,<number of frame chunks(32 frames)>,<aux channel(1 or 2)>,<range(0 is 0V-2.5V and 1 is 0V-5V)>,<userdata0>,<userdata1>
     
@@ -203,7 +203,7 @@ example:
 
     `"40000.00\na\n"`
 
-Status command:
+### Status command:
 
     `"s\n"`
     
@@ -215,7 +215,7 @@ example:
 
     `"1,115360,0,�S8......\na\n"`
     
-Eject card command: 
+### Eject card command: 
 
     This aborts the reading and closes the SD card file.
     
@@ -227,7 +227,7 @@ response:
 
     `"a\n"`
 
-Frame chunk readout command:
+### Frame chunk readout command:
 
     f<chunk id(starts at 0)>
     
