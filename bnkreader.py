@@ -1,8 +1,8 @@
 """
 27 JUL 2020
-cli.py
+bnkreader.py
 Nathan Zimmerberg (nhz2@cornell.edu)
-Command line interface for reading the BNK chip
+Helper functions for reading the BNK chip
 """
 import time
 import serial
