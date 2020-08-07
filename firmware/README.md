@@ -163,50 +163,84 @@ The RGB LED green is on during a recording.
 
 ## Serial Protocol
 
-The serial protocol is a command and response where the PC is the commander and the device is the responder.
+The serial protocol is command and response where the PC is the commander and the device is the responder.
 All commands end with a newline.
 The device will finish a response with `"a\n"` when it is ready for a new command.
 
 NOP command:
+
     `"a\n"`
+    
 response:
+
     `"a\n"`
 
 DAC set voltage command:
-    d voltage
+
+    d<voltage(V)>
+    
 example:
+
     `"d0.743\n"`
+    
 response:
+
     `"a\n"`
 
 Recording start command:
-    r frame rate(Hz), number of frame chunks(32 frames), aux channel, 
-    range(0 is 0V-2.5V and 1 is 0V-5V),user data 0, user data 1
+
+    r<frame rate(Hz)>,<number of frame chunks(32 frames)>,<aux channel(1 or 2)>,<range(0 is 0V-2.5V and 1 is 0V-5V)>,<userdata0>,<userdata1>
+    
 example:
+
     `"r40000.0,131072,2,1,-55,109\n"`
+    
 response:
+
     real frame rate(Hz)
+    
 example:
+
     `"40000.00\na\n"`
 
 Status command:
-    `"s\n"`
-response:
-    1 if recording and 0 if not recording, frame chunks saved, frames skipped, last saved frame(256 bytes of raw data)
-example:
-    `"1,115360,0,�S8......\na\n"`
 
-Eject card command:
-    `"e\n"`
+    `"s\n"`
+    
 response:
+
+    <1 if recording and 0 if not recording>,<frame chunks saved>,<frames skipped>,<last saved frame(256 bytes of raw data)>
+    
+example:
+
+    `"1,115360,0,�S8......\na\n"`
+    
+Eject card command: 
+
+    This aborts the reading and closes the SD card file.
+    
+example:
+
+    `"e\n"`
+    
+response:
+
     `"a\n"`
 
 Frame chunk readout command:
-    f chunk id starts at 0
+
+    f<chunk id(starts at 0)>
+    
 example:
+
     `"f100\n"`
+    
 response:
+
     256*32 bytes of raw data and a new line and ack.
+    
 example:
+
     `"fajknj.......\na\n"`
+    
     
